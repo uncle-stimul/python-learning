@@ -41,6 +41,7 @@ class Repository:
             'CREATE TABLE IF NOT EXISTS Styles ( id INTEGER PRIMARY KEY AUTOINCREMENT, style VARCHAR(64) NOT NULL UNIQUE );',
             'CREATE TABLE IF NOT EXISTS Releases ( id INTEGER PRIMARY KEY AUTOINCREMENT, year VARCHAR(4) NOT NULL UNIQUE );',
             'CREATE TABLE IF NOT EXISTS Albums ( \
+                id INTEGER PRIMARY KEY AUTOINCREMENT, \
                 album VARCHAR(255) NOT NULL UNIQUE, \
                 musician INTEGER NOT NULL, \
                 style INTEGER NOT NULL, \
@@ -87,6 +88,23 @@ class Repository:
             id = Repository.get_id(table, attr, value)
             return id
 
+    def get_name(table: str, attr: str, id: int) -> str:
+        query = f'SELECT {attr} FROM {table} WHERE id=\'{id}\';'
+        payload = Repository.workload(query)
+        name = str(payload['data'][0][0])
+        return name
+
+    def get_album(id):
+        obj = Repository.Object()
+        query = f'SELECT * FROM Albums WHERE id = {id};'
+        payload = Repository.workload(query)
+        if payload['data'][0]:
+            obj.album = payload['data'][0][1]
+            obj.musician = payload['data'][0][2]
+            obj.style = payload['data'][0][3]
+            obj.release = payload['data'][0][4]
+        return obj
+
     def create(table: str, obj: Object) -> None:
         queries = {
             "Albums": f"INSERT INTO Albums (album, musician, style, release) VALUES ('{obj.album}', {obj.musician}, {obj.style}, {obj.release});",
@@ -98,8 +116,15 @@ class Repository:
         if not payload['status']:
             print(f'При добавлении объекта возникла ошибка!')
 
-    def update(album: str, obj: Object) -> None:
-        pass
+    def update(id: int, obj: Object) -> None:
+        query = (
+            f"UPDATE Albums SET album = '{obj.album}', musician = {obj.musician}, "
+            + f"style = {obj.style}, release = {obj.release} "
+            + f"WHERE id LIKE {id};"
+        )
+        payload = Repository.workload(query)
+        if not payload['status']:
+            print(f'При обновлении объекта возникла ошибка!')
 
     def delete(table: str, attr: str, value: str) -> None:
         query = f'DELETE FROM {table} WHERE {attr} LIKE \'{value}\';' 
@@ -108,21 +133,25 @@ class Repository:
             print('При формировании выборки из БД возникла ошибка!')
             return
 
-    def search(attr: str, value: str) -> None:
+    def search(attr: str, value) -> None:
+        if type(value) == int:
+            filter = f'AND Albums.{attr} = {value};'
+        else:
+            filter = f'AND Albums.{attr} LIKE \'{value}\';'
         query = (
             'SELECT Albums.album, Musicians.musician, Styles.style, Releases.year '
             + 'FROM Albums, Musicians, Styles, Releases '
             + 'WHERE Albums.musician = Musicians.id '
             + 'AND Albums.style = Styles.id '
             + 'AND Albums.release = Releases.id '
-            + f'AND {attr} LIKE \'{value}\';'
+            + filter
         )
         payload = Repository.workload(query)
         if not payload['status']:
             print('[Ошибка] При формировании выборки из БД возникла ошибка!')
             return
         if payload['data']:
-            print('Альбом\tИсполнитель\tЖанр\tГод релиза')
+            print('Альбом\t\tИсполнитель\tЖанр\tГод релиза')
             for row in payload['data']:
                 row = list(row)
                 print('\t'.join(str(item) for item in row))
@@ -131,7 +160,7 @@ class Repository:
 
     def sint() -> None:
         os.system('clear')
-        if not os.path.exists('sint.json'):
+        if not os.path.exists('demo.json'):
             print('[Ошибка] Файл с синтетическими данными отсутствует')
             return
         try:
