@@ -164,7 +164,7 @@ class Repository:
             print('[Ошибка] Файл с синтетическими данными отсутствует')
             return
         try:
-            with open('sint.json', 'r') as raw:
+            with open('demo.json', 'r') as raw:
                 lines = json.load(raw)
         except:
             print('[Ошибка] Файл с синтетическими данными имеет не корректную структуру')
