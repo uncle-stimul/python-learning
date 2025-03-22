@@ -146,7 +146,7 @@ class Menu:
                 case '4': 
                     obj.album = input(f'{Menu.get_size()}\nВведите год релиза: ')
                     table='Releases'
-                    if Repository.exists(table=table, attr='releases', value=obj.album):
+                    if Repository.exists(table=table, attr='year', value=obj.album):
                         os.system('clear')
                         print(f'{Menu.get_size()}\n[Ошибка] Объект с таким именем уже существует')
                         return
